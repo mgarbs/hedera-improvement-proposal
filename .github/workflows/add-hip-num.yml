@@ -52,7 +52,13 @@ jobs:
         HIP_HEADER="hip: $PR_NUMBER"
         HIP_DIRECTORY='HIP'
         HIP_FILE=$(echo "$HIP_FILES" | head -n 1)  # Pick the first HIP file for the assignment
-        sed -i "s/^hip:.*$/$HIP_HEADER/" "$HIP_FILE"
+        echo "Assigning HIP number to file: $HIP_FILE"  # Debugging line
+        if [ -n "$HIP_FILE" ]; then
+          sed -i "s/^hip:.*$/$HIP_HEADER/" "$HIP_FILE"
+        else
+          echo "No valid HIP file to assign a number."
+          exit 1
+        fi
 
     - name: Rename HIP File
       if: steps.check-new.outputs.new-hip == 'true'
@@ -60,8 +66,13 @@ jobs:
         PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
         HIP_DIRECTORY='HIP'
         HIP_FILE=$(echo "$HIP_FILES" | head -n 1)
-        NEW_HIP_FILE="$HIP_DIRECTORY/hip-$PR_NUMBER.md"
-        mv "$HIP_FILE" "$NEW_HIP_FILE"
+        if [ -n "$HIP_FILE" ]; then
+          NEW_HIP_FILE="$HIP_DIRECTORY/hip-$PR_NUMBER.md"
+          mv "$HIP_FILE" "$NEW_HIP_FILE"
+        else
+          echo "No HIP file found to rename."
+          exit 1
+        fi
 
     - name: Commit Changes
       if: steps.check-new.outputs.new-hip == 'true'
