@@ -34,15 +34,12 @@ jobs:
         PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
         HIP_HEADER="hip: $PR_NUMBER"
         # Update the relevant file header here
-        # Example using sed to modify the specific file
         HIP_FILE=$(git diff --name-only origin/main...$GITHUB_SHA | grep '^hips/.*\.md')
         sed -i "s/^hip:.*$/$HIP_HEADER/" $HIP_FILE
 
-    - name: Commit Changes
+    - name: Rename HIP File
       if: steps.check-new.outputs.new-hip == 'true'
       run: |
-        git config --global user.name 'GitHub Action'
-        git config --global user.email 'action@github.com'
-        git add hips/
-        git commit -m "Assign HIP number to new proposal"
-        git push origin
+        PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
+        HIP_FILE=$(git diff --name-only origin/main...$GITHUB_SHA | grep '^hips/.*\.md')
+        NEW_HIP_FILE="hips
