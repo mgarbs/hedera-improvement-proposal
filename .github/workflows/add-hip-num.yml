@@ -48,7 +48,8 @@ jobs:
           echo "This PR creates a new HIP."
           echo "::set-output name=new-hip::true"
         else
-          exit 0
+          echo "::set-output name=new-hip::false"
+        fi  # Properly close the if block
 
     - name: Assign HIP Number
       if: steps.check-new.outputs.new-hip == 'true'
@@ -62,6 +63,7 @@ jobs:
         else
           echo "No valid HIP file to assign a number."
           exit 1
+        fi  # Close the if block
 
     - name: Rename HIP File
       if: steps.check-new.outputs.new-hip == 'true'
@@ -74,6 +76,7 @@ jobs:
         else
           echo "No HIP file found to rename."
           exit 1
+        fi  # Close the if block
 
     - name: Commit Changes
       if: steps.check-new.outputs.new-hip == 'true'
