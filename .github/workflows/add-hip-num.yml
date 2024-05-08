@@ -90,6 +90,7 @@ jobs:
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
+          PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
           git add HIP/
-          git commit -m "Assign HIP number and rename file to hip-$PR_NUMBER.md"
+          git commit -m "Assigning HIP $PR_NUMBER and renaming file to hip-$PR_NUMBER.md"
           git push origin HEAD:${{ github.head_ref }}
