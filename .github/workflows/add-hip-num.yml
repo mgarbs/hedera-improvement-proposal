@@ -28,6 +28,7 @@ jobs:
           HIP_DIRECTORY='HIP'
           HIP_FILES=$(echo "$MODIFIED_FILES" | grep "^$HIP_DIRECTORY/.*\.md")
           echo "Filtered HIP files: $HIP_FILES"
+          echo "::set-output name=hip-files::$HIP_FILES"
           
           # Check if any HIP files were modified
           if [ -z "$HIP_FILES" ]; then
@@ -59,7 +60,7 @@ jobs:
         run: |
           PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
           HIP_HEADER="hip: $PR_NUMBER"
-          HIP_FILE=$(echo "$HIP_FILES" | head -n 1)
+          HIP_FILE=$(echo "${{ steps.check-new.outputs.hip-files }}" | head -n 1)
           
           echo "Assigning HIP number to file: $HIP_FILE"
           
@@ -74,7 +75,7 @@ jobs:
         if: steps.check-new.outputs.new-hip == 'true'
         run: |
           PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
-          HIP_FILE=$(echo "$HIP_FILES" | head -n 1)
+          HIP_FILE=$(echo "${{ steps.check-new.outputs.hip-files }}" | head -n 1)
           
           if [ -n "$HIP_FILE" ]; then
             NEW_HIP_FILE="HIP/hip-$PR_NUMBER.md"
