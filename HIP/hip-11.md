@@ -1,12 +1,13 @@
 ---
-hip: 11
+hip: 123132
 title: <HIP title>
 author: <a list of the author’s or authors’ name(s) and/or username(s), or name(s) and email(s).>
 working-group: a list of the technical and business stakeholders' name(s) and/or username(s), or name(s) and email(s).
 type: <Standards Track | Informational | Process>
 category: <Core | Service | Mirror | Application>
 needs-council-approval: <Yes | No>
-status: <Draft | Review | Last Call | Active | Inactive | Deferred | Rejected | Withdrawn | Accepted | Final | Replaced>
+status: Last Call
+last-call-date-time: 2024-05-22
 created: <date created on>
 discussions-to: <a URL pointing to the official discussion thread>
 updated: <comma separated list of dates>
