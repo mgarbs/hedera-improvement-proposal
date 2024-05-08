@@ -1,4 +1,5 @@
 name: Assign HIP Number
+
 on:
   pull_request:
     types: [opened, synchronize]
@@ -6,83 +7,88 @@ on:
 jobs:
   assign-hip-number:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Check out the code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
+      - name: Check out the code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-    - name: Identify if New HIP
-      id: check-new
-      run: |
-        # Fetch the master branch to have all necessary references
-        git fetch origin master
-
-        # Get the modified files in the PR against the master branch
-        MODIFIED_FILES=$(git diff --name-only origin/master...$GITHUB_SHA)
-        echo "Modified files in PR: $MODIFIED_FILES"
-
-        # Use the correct directory path (root/HIP)
-        HIP_DIRECTORY='HIP'
-        HIP_FILES=$(echo "$MODIFIED_FILES" | grep "^$HIP_DIRECTORY/.*\.md")
-        echo "Filtered HIP files: $HIP_FILES"  # Debugging line
-
-        if [ -z "$HIP_FILES" ]; then
-          echo "No modified HIP files found."
-          echo "::set-output name=new-hip::false"
-          exit 0
-        fi
-
-        # Check if any of the HIP files have an assigned number
-        NEW_HIP=true
-        for file in $HIP_FILES; do
-          if grep -q '^hip: [0-9]' "$file"; then
-            echo "This PR modifies an existing HIP: $file"
+      - name: Identify if New HIP
+        id: check-new
+        run: |
+          # Fetch the master branch to have all necessary references
+          git fetch origin master
+          
+          # Get the modified files in the PR against the master branch
+          MODIFIED_FILES=$(git diff --name-only origin/master...$GITHUB_SHA)
+          echo "Modified files in PR: $MODIFIED_FILES"
+          
+          # Use the correct directory path (root/HIP)
+          HIP_DIRECTORY='HIP'
+          HIP_FILES=$(echo "$MODIFIED_FILES" | grep "^$HIP_DIRECTORY/.*\.md")
+          echo "Filtered HIP files: $HIP_FILES"
+          
+          # Check if any HIP files were modified
+          if [ -z "$HIP_FILES" ]; then
+            echo "No modified HIP files found."
             echo "::set-output name=new-hip::false"
-            NEW_HIP=false
-            break
+            exit 0
           fi
-        done
+          
+          # Check if any of the HIP files have an assigned number
+          NEW_HIP=true
+          for file in $HIP_FILES; do
+            if grep -q '^hip: \[0-9\]' "$file"; then
+              echo "This PR modifies an existing HIP: $file"
+              echo "::set-output name=new-hip::false"
+              NEW_HIP=false
+              break
+            fi
+          done
+          
+          if [ "$NEW_HIP" = "true" ]; then
+            echo "This PR creates a new HIP."
+            echo "::set-output name=new-hip::true"
+          else
+            echo "::set-output name=new-hip::false"
+          fi
 
-        if [ "$NEW_HIP" = "true" ]; then
-          echo "This PR creates a new HIP."
-          echo "::set-output name=new-hip::true"
-        else
-          echo "::set-output name=new-hip::false"
-        fi  # Properly close the if block
+      - name: Assign HIP Number
+        if: steps.check-new.outputs.new-hip == 'true'
+        run: |
+          PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
+          HIP_HEADER="hip: $PR_NUMBER"
+          HIP_FILE=$(echo "$HIP_FILES" | head -n 1)
+          
+          echo "Assigning HIP number to file: $HIP_FILE"
+          
+          if [ -n "$HIP_FILE" ]; then
+            sed -i "s/^hip:.*$/$HIP_HEADER/" "$HIP_FILE"
+          else
+            echo "No valid HIP file to assign a number."
+            exit 1
+          fi
 
-    - name: Assign HIP Number
-      if: steps.check-new.outputs.new-hip == 'true'
-      run: |
-        PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
-        HIP_HEADER="hip: $PR_NUMBER"
-        HIP_FILE=$(echo "$HIP_FILES" | head -n 1)  # Pick the first HIP file for the assignment
-        echo "Assigning HIP number to file: $HIP_FILE"  # Debugging line
-        if [ -n "$HIP_FILE" ]; then
-          sed -i "s/^hip:.*$/$HIP_HEADER/" "$HIP_FILE"
-        else
-          echo "No valid HIP file to assign a number."
-          exit 1
-        fi  # Close the if block
+      - name: Rename HIP File
+        if: steps.check-new.outputs.new-hip == 'true'
+        run: |
+          PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
+          HIP_FILE=$(echo "$HIP_FILES" | head -n 1)
+          
+          if [ -n "$HIP_FILE" ]; then
+            NEW_HIP_FILE="HIP/hip-$PR_NUMBER.md"
+            mv "$HIP_FILE" "$NEW_HIP_FILE"
+          else
+            echo "No HIP file found to rename."
+            exit 1
+          fi
 
-    - name: Rename HIP File
-      if: steps.check-new.outputs.new-hip == 'true'
-      run: |
-        PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
-        HIP_FILE=$(echo "$HIP_FILES" | head -n 1)
-        if [ -n "$HIP_FILE" ]; then
-          NEW_HIP_FILE="HIP/hip-$PR_NUMBER.md"
-          mv "$HIP_FILE" "$NEW_HIP_FILE"
-        else
-          echo "No HIP file found to rename."
-          exit 1
-        fi  # Close the if block
-
-    - name: Commit Changes
-      if: steps.check-new.outputs.new-hip == 'true'
-      run: |
-        git config --global user.name 'GitHub Action'
-        git config --global user.email 'action@github.com'
-        git add HIP/
-        git commit -m "Assign HIP number and rename file to hip-$PR_NUMBER.md"
-        git push origin
+      - name: Commit Changes
+        if: steps.check-new.outputs.new-hip == 'true'
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add HIP/
+          git commit -m "Assign HIP number and rename file to hip-$PR_NUMBER.md"
+          git push origin HEAD:${{ github.head_ref }}
