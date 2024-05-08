@@ -2,7 +2,7 @@ name: Schedule Council Review Status Update
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   start-timer:
