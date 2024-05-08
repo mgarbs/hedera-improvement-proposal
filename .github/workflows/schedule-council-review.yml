@@ -1,4 +1,4 @@
-name: Immediate Status Update
+name: Schedule Status Update
 
 on:
   pull_request:
@@ -23,30 +23,37 @@ jobs:
           # Get the modified file from the merged pull request
           MODIFIED_FILE=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | grep -E '^HIP/.*\.md$')
           echo "Modified file: $MODIFIED_FILE"
-          echo "MODIFIED_FILE=$MODIFIED_FILE" >> $GITHUB_ENV
+          echo "modified_file=$MODIFIED_FILE" >> $GITHUB_OUTPUT
 
       - name: Check if modified file is in Last Call
-        if: env.MODIFIED_FILE != ''
+        if: steps.get-modified-file.outputs.modified_file != ''
         id: check-last-call
         run: |
           # Check if the modified file has a status of 'Last Call'
-          if grep -qE '^status: Last Call' "$MODIFIED_FILE"; then
+          if grep -qE '^status: Last Call' "${{ steps.get-modified-file.outputs.modified_file }}"; then
             echo "File is in Last Call"
-            echo "LAST_CALL=true" >> $GITHUB_ENV
+            echo "last_call=true" >> $GITHUB_OUTPUT
           else
             echo "File is not in Last Call"
-            echo "LAST_CALL=false" >> $GITHUB_ENV
+            echo "last_call=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Determine new status
-        if: env.LAST_CALL == 'true'
-        id: determine-status
+      - name: Schedule status update
+        if: steps.check-last-call.outputs.last_call == 'true'
         run: |
-          # Get the 'type' and 'category' values from the HIP file
-          hip_type=$(grep -oP '(?<=^type: )\w+' "$MODIFIED_FILE")
-          hip_category=$(grep -oP '(?<=^category: )\w+' "$MODIFIED_FILE")
+          # Extract the 'last-call-date-time' value from the HIP file
+          last_call_date=$(grep -oP '(?<=^last-call-date-time: )[0-9]{4}-[0-9]{2}-[0-9]{2}' "${{ steps.get-modified-file.outputs.modified_file }}")
 
-          # Determine the new status based on 'type' and 'category'
+          # Calculate the target date (2 weeks from the 'last-call-date-time')
+          target_date=$(date -d "$last_call_date + 14 days" +%Y-%m-%d)
+
+          # Get the 'type' value from the HIP file
+          hip_type=$(grep -oP '(?<=^type: )\w+' "${{ steps.get-modified-file.outputs.modified_file }}")
+
+          # Get the 'category' value from the HIP file
+          hip_category=$(grep -oP '(?<=^category: )\w+' "${{ steps.get-modified-file.outputs.modified_file }}")
+
+          # Determine the new status based on the 'type' and 'category'
           if [[ "$hip_type" == "Standards Track" ]]; then
             if [[ "$hip_category" == "Application" ]]; then
               new_status="Accepted"
@@ -57,12 +64,15 @@ jobs:
             new_status="Active"
           fi
 
-          echo "STATUS_UPDATE_FILE=$MODIFIED_FILE" >> $GITHUB_ENV
-          echo "STATUS_UPDATE_STATUS=$new_status" >> $GITHUB_ENV
+          # Schedule the status update job
+          echo "Scheduling status update for ${{ steps.get-modified-file.outputs.modified_file }} to $new_status on $target_date"
+          echo "status_update_file=${{ steps.get-modified-file.outputs.modified_file }}" >> $GITHUB_OUTPUT
+          echo "status_update_date=$target_date" >> $GITHUB_OUTPUT
+          echo "status_update_status=$new_status" >> $GITHUB_OUTPUT
 
   update-status:
     needs: check-merged-file
-    if: env.STATUS_UPDATE_FILE != '' && env.STATUS_UPDATE_STATUS != ''
+    if: needs.check-merged-file.outputs.status_update_file != '' && needs.check-merged-file.outputs.status_update_date != '' && needs.check-merged-file.outputs.status_update_status != ''
     runs-on: ubuntu-latest
 
     steps:
@@ -71,15 +81,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Wait until status update date
+        run: |
+          while [[ "$(date +%Y-%m-%d)" < "${{ needs.check-merged-file.outputs.status_update_date }}" ]]; do
+            sleep 3600  # Wait for 1 hour
+          done
+
       - name: Update HIP status
         run: |
-          sed -i "s/^status: Last Call/status: ${{ env.STATUS_UPDATE_STATUS }}/" "${{ env.STATUS_UPDATE_FILE }}"
+          sed -i "s/^status: Last Call/status: ${{ needs.check-merged-file.outputs.status_update_status }}/" "${{ needs.check-merged-file.outputs.status_update_file }}"
 
       - name: Create PR for status update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
-          git add "${{ env.STATUS_UPDATE_FILE }}"
-          git commit -m "Update status of ${{ env.STATUS_UPDATE_FILE }} to ${{ env.STATUS_UPDATE_STATUS }}"
+          git add "${{ needs.check-merged-file.outputs.status_update_file }}"
+          git commit -m "Update status of ${{ needs.check-merged-file.outputs.status_update_file }} to ${{ needs.check-merged-file.outputs.status_update_status }}"
           git push origin HEAD:status-update-${{ github.sha }}
-          gh pr create --title "Update status of ${{ env.STATUS_UPDATE_FILE }} to ${{ env.STATUS_UPDATE_STATUS }}" --body "Automatically updating the status of ${{ env.STATUS_UPDATE_FILE }} to ${{ env.STATUS_UPDATE_STATUS }}." --base master --head status-update-${{ github.sha }}
+          gh pr create --title "Update status of ${{ needs.check-merged-file.outputs.status_update_file }} to ${{ needs.check-merged-file.outputs.status_update_status }}" --body "Automatically updating the status of ${{ needs.check-merged-file.outputs.status_update_file }} to ${{ needs.check-merged-file.outputs.status_update_status }} based on the last-call-date-time." --base master --head status-update-${{ github.sha }}
