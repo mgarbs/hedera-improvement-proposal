@@ -26,7 +26,7 @@ jobs:
     - name: Set Delayed Action
       run: |
         # Wait for 2 weeks (1209600 seconds)
-        sleep 1209600
+        sleep 60
 
     - name: Update HIP Status to Council Review
       if: env.LAST_CALL_HIPS != ""
