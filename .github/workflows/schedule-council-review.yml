@@ -1,83 +1,85 @@
-name: Schedule Status Update
+name: Immediate Status Update
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - master
 
 jobs:
-  start-timer:
+  check-merged-file:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out the code
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Identify HIPs in Last Call
-        id: find-last-call
+      - name: Get modified file
+        id: get-modified-file
         run: |
-          # Fetch the master branch
-          git fetch origin master
+          # Get the modified file from the merged pull request
+          MODIFIED_FILE=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | grep -E '^HIP/.*\.md$')
+          echo "Modified file: $MODIFIED_FILE"
+          echo "MODIFIED_FILE=$MODIFIED_FILE" >> $GITHUB_ENV
 
-          # Get HIP files that have status set to 'Last Call'
-          LAST_CALL_HIPS=$(grep -rlE '^status: Last Call' HIP/ | xargs grep -lE '^type: Standards Track' | xargs grep -lE '^category: (Core|Service|Mirror|Application)')
-
-          # Check if there's any HIP that has a 'last-call-date-time' in the future
-          if [ -n "$LAST_CALL_HIPS" ]; then
-            echo "LAST_CALL_HIPS=$LAST_CALL_HIPS" >> $GITHUB_ENV
+      - name: Check if modified file is in Last Call
+        if: env.MODIFIED_FILE != ''
+        id: check-last-call
+        run: |
+          # Check if the modified file has a status of 'Last Call'
+          if grep -qE '^status: Last Call' "$MODIFIED_FILE"; then
+            echo "File is in Last Call"
+            echo "LAST_CALL=true" >> $GITHUB_ENV
           else
-            echo "LAST_CALL_HIPS=" >> $GITHUB_ENV
+            echo "File is not in Last Call"
+            echo "LAST_CALL=false" >> $GITHUB_ENV
           fi
 
-  set-delayed-action:
-    needs: start-timer
+      - name: Determine new status
+        if: env.LAST_CALL == 'true'
+        id: determine-status
+        run: |
+          # Get the 'type' and 'category' values from the HIP file
+          hip_type=$(grep -oP '(?<=^type: )\w+' "$MODIFIED_FILE")
+          hip_category=$(grep -oP '(?<=^category: )\w+' "$MODIFIED_FILE")
+
+          # Determine the new status based on 'type' and 'category'
+          if [[ "$hip_type" == "Standards Track" ]]; then
+            if [[ "$hip_category" == "Application" ]]; then
+              new_status="Accepted"
+            else
+              new_status="Council Review"
+            fi
+          elif [[ "$hip_type" == "Informational" || "$hip_type" == "Process" ]]; then
+            new_status="Active"
+          fi
+
+          echo "STATUS_UPDATE_FILE=$MODIFIED_FILE" >> $GITHUB_ENV
+          echo "STATUS_UPDATE_STATUS=$new_status" >> $GITHUB_ENV
+
+  update-status:
+    needs: check-merged-file
+    if: env.STATUS_UPDATE_FILE != '' && env.STATUS_UPDATE_STATUS != ''
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out the code
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Update HIP Status
-        if: env.LAST_CALL_HIPS != ''
+      - name: Update HIP status
         run: |
-          for file in $LAST_CALL_HIPS; do
-            # Extract the 'last-call-date-time' value from the HIP file
-            last_call_date=$(grep -oP '(?<=^last-call-date-time: )[0-9]{4}-[0-9]{2}-[0-9]{2}' "$file")
+          sed -i "s/^status: Last Call/status: ${{ env.STATUS_UPDATE_STATUS }}/" "${{ env.STATUS_UPDATE_FILE }}"
 
-            # Calculate the target date (2 weeks from the 'last-call-date-time')
-            target_date=$(date -d "$last_call_date + 14 days" +%Y-%m-%d)
-
-            # Get the current date
-            current_date=$(date +%Y-%m-%d)
-
-            # Check if the current date is on or after the target date
-            if [[ "$current_date" >= "$target_date" ]]; then
-              # Get the 'type' value from the HIP file
-              hip_type=$(grep -oP '(?<=^type: )\w+' "$file")
-
-              # Get the 'category' value from the HIP file
-              hip_category=$(grep -oP '(?<=^category: )\w+' "$file")
-
-              # Update the status based on the 'type' and 'category'
-              if [[ "$hip_type" == "Standards Track" ]]; then
-                if [[ "$hip_category" == "Application" ]]; then
-                  sed -i "s/^status: Last Call/status: Accepted/" "$file"
-                else
-                  sed -i "s/^status: Last Call/status: Council Review/" "$file"
-                fi
-              elif [[ "$hip_type" == "Informational" || "$hip_type" == "Process" ]]; then
-                sed -i "s/^status: Last Call/status: Active/" "$file"
-              fi
-            fi
-          done
-
-      - name: Create PR for Status Update
-        if: env.LAST_CALL_HIPS != ''
+      - name: Create PR for status update
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
-          git add HIP/
-          git commit -m "Update HIP status based on last-call-date-time"
-          git push origin HEAD:status-update-pr
+          git add "${{ env.STATUS_UPDATE_FILE }}"
+          git commit -m "Update status of ${{ env.STATUS_UPDATE_FILE }} to ${{ env.STATUS_UPDATE_STATUS }}"
+          git push origin HEAD:status-update-${{ github.sha }}
+          gh pr create --title "Update status of ${{ env.STATUS_UPDATE_FILE }} to ${{ env.STATUS_UPDATE_STATUS }}" --body "Automatically updating the status of ${{ env.STATUS_UPDATE_FILE }} to ${{ env.STATUS_UPDATE_STATUS }}." --base master --head status-update-${{ github.sha }}
