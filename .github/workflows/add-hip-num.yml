@@ -9,11 +9,15 @@ jobs:
     steps:
     - name: Check out the code
       uses: actions/checkout@v2
+      with:
+        # Fetch all history to ensure branch references are available
+        fetch-depth: 0
 
     - name: Identify if New HIP
       id: check-new
       run: |
-        # Find the modified files in the PR
+        # Find the modified files in the PR, fetching specific branches if necessary
+        git fetch origin main
         MODIFIED_FILES=$(git diff --name-only origin/main...$GITHUB_SHA)
         HIP_FILES=$(echo "$MODIFIED_FILES" | grep '^hips/.*\.md')
 
@@ -42,4 +46,14 @@ jobs:
       run: |
         PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
         HIP_FILE=$(git diff --name-only origin/main...$GITHUB_SHA | grep '^hips/.*\.md')
-        NEW_HIP_FILE="hips
+        NEW_HIP_FILE="hips/hip-$PR_NUMBER.md"
+        mv "$HIP_FILE" "$NEW_HIP_FILE"
+
+    - name: Commit Changes
+      if: steps.check-new.outputs.new-hip == 'true'
+      run: |
+        git config --global user.name 'GitHub Action'
+        git config --global user.email 'action@github.com'
+        git add hips/
+        git commit -m "Assign HIP number and rename file to hip-$PR_NUMBER.md"
+        git push origin
