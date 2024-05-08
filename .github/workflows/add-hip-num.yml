@@ -23,7 +23,7 @@ jobs:
         echo "Modified files in PR: $MODIFIED_FILES"
 
         # Only consider files in the hips directory
-        HIP_FILES=$(echo "$MODIFIED_FILES" | grep '^hips/.*\.md')
+        HIP_FILES=$(echo "$MODIFIED_FILES" | grep '^HIP/.*\.md')
 
         if [ -z "$HIP_FILES" ]; then
           echo "No modified HIP files found."
@@ -57,7 +57,7 @@ jobs:
       run: |
         PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
         HIP_FILE=$(echo "$HIP_FILES" | head -n 1)
-        NEW_HIP_FILE="hips/hip-$PR_NUMBER.md"
+        NEW_HIP_FILE="HIP/hip-$PR_NUMBER.md"
         mv "$HIP_FILE" "$NEW_HIP_FILE"
 
     - name: Commit Changes
@@ -65,6 +65,6 @@ jobs:
       run: |
         git config --global user.name 'GitHub Action'
         git config --global user.email 'action@github.com'
-        git add hips/
+        git add HIP/
         git commit -m "Assign HIP number and rename file to hip-$PR_NUMBER.md"
         git push origin
