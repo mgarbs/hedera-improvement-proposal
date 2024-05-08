@@ -25,6 +25,7 @@ jobs:
         # Use the correct directory path (root/HIP)
         HIP_DIRECTORY='HIP'
         HIP_FILES=$(echo "$MODIFIED_FILES" | grep "^$HIP_DIRECTORY/.*\.md")
+        echo "Filtered HIP files: $HIP_FILES"  # Debugging line
 
         if [ -z "$HIP_FILES" ]; then
           echo "No modified HIP files found."
@@ -33,24 +34,27 @@ jobs:
         fi
 
         # Check if any of the HIP files have an assigned number
+        NEW_HIP=true
         for file in $HIP_FILES; do
           if grep -q '^hip: [0-9]' "$file"; then
             echo "This PR modifies an existing HIP: $file"
             echo "::set-output name=new-hip::false"
-            exit 0
+            NEW_HIP=false
+            break
           fi
         done
 
-        # If no HIP number is found, assume it's a new proposal
-        echo "This PR creates a new HIP."
-        echo "::set-output name=new-hip::true"
+        if [ "$NEW_HIP" = "true" ]; then
+          echo "This PR creates a new HIP."
+          echo "::set-output name=new-hip::true"
+        else
+          exit 0
 
     - name: Assign HIP Number
       if: steps.check-new.outputs.new-hip == 'true'
       run: |
         PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
         HIP_HEADER="hip: $PR_NUMBER"
-        HIP_DIRECTORY='HIP'
         HIP_FILE=$(echo "$HIP_FILES" | head -n 1)  # Pick the first HIP file for the assignment
         echo "Assigning HIP number to file: $HIP_FILE"  # Debugging line
         if [ -n "$HIP_FILE" ]; then
@@ -58,27 +62,24 @@ jobs:
         else
           echo "No valid HIP file to assign a number."
           exit 1
-        fi
 
     - name: Rename HIP File
       if: steps.check-new.outputs.new-hip == 'true'
       run: |
         PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
-        HIP_DIRECTORY='HIP'
         HIP_FILE=$(echo "$HIP_FILES" | head -n 1)
         if [ -n "$HIP_FILE" ]; then
-          NEW_HIP_FILE="$HIP_DIRECTORY/hip-$PR_NUMBER.md"
+          NEW_HIP_FILE="HIP/hip-$PR_NUMBER.md"
           mv "$HIP_FILE" "$NEW_HIP_FILE"
         else
           echo "No HIP file found to rename."
           exit 1
-        fi
 
     - name: Commit Changes
       if: steps.check-new.outputs.new-hip == 'true'
       run: |
         git config --global user.name 'GitHub Action'
         git config --global user.email 'action@github.com'
-        git add "$HIP_DIRECTORY/"
+        git add HIP/
         git commit -m "Assign HIP number and rename file to hip-$PR_NUMBER.md"
         git push origin
