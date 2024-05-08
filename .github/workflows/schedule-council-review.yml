@@ -10,10 +10,14 @@ jobs:
     steps:
     - name: Check out the code
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
 
     - name: Identify HIPs in Last Call
       id: find-last-call
       run: |
+        # Fetch the master branch
+        git fetch origin master
         # Get HIP files that have status set to 'Last Call'
         LAST_CALL_HIPS=$(grep -rl '^status: Last Call' hips/)
         # Check if there's any HIP that has a 'last-call-date-time' in the future

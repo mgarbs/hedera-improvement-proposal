@@ -10,25 +10,37 @@ jobs:
     - name: Check out the code
       uses: actions/checkout@v2
       with:
-        # Fetch all history to ensure branch references are available
         fetch-depth: 0
 
     - name: Identify if New HIP
       id: check-new
       run: |
-        # Find the modified files in the PR, fetching specific branches if necessary
+        # Fetch the master branch to have all necessary references
         git fetch origin master
+
+        # Get the modified files in the PR against master branch
         MODIFIED_FILES=$(git diff --name-only origin/master...$GITHUB_SHA)
+        echo "Modified files in PR: $MODIFIED_FILES"
+
+        # Only consider files in the hips directory
         HIP_FILES=$(echo "$MODIFIED_FILES" | grep '^hips/.*\.md')
 
-        # Check if the modified files have 'hip: <number>' already assigned
+        if [ -z "$HIP_FILES" ]; then
+          echo "No modified HIP files found."
+          echo "::set-output name=new-hip::false"
+          exit 0
+        fi
+
+        # Check if any of the HIP files have an assigned number
         for file in $HIP_FILES; do
           if grep -q '^hip: [0-9]' $file; then
-            echo "This PR modifies an existing HIP."
+            echo "This PR modifies an existing HIP: $file"
             echo "::set-output name=new-hip::false"
             exit 0
           fi
         done
+
+        # If no HIP number is found, assume it's a new proposal
         echo "This PR creates a new HIP."
         echo "::set-output name=new-hip::true"
 
@@ -37,15 +49,14 @@ jobs:
       run: |
         PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
         HIP_HEADER="hip: $PR_NUMBER"
-        # Update the relevant file header here
-        HIP_FILE=$(git diff --name-only origin/master...$GITHUB_SHA | grep '^hips/.*\.md')
+        HIP_FILE=$(echo "$HIP_FILES" | head -n 1)  # Pick the first HIP file for the assignment
         sed -i "s/^hip:.*$/$HIP_HEADER/" $HIP_FILE
 
     - name: Rename HIP File
       if: steps.check-new.outputs.new-hip == 'true'
       run: |
         PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
-        HIP_FILE=$(git diff --name-only origin/master...$GITHUB_SHA | grep '^hips/.*\.md')
+        HIP_FILE=$(echo "$HIP_FILES" | head -n 1)
         NEW_HIP_FILE="hips/hip-$PR_NUMBER.md"
         mv "$HIP_FILE" "$NEW_HIP_FILE"
 
