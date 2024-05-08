@@ -1,5 +1,5 @@
 ---
-hip: 21
+hip: 12
 title: Free network info query              
 author: Simi Hunjan (@SimiHunjan)
 type: Standards Track
