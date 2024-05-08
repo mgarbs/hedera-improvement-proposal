@@ -1,12 +1,12 @@
 ---
-hip: 21
+hip: 12
 title: Free network info query              
 author: Simi Hunjan (@SimiHunjan)
 type: Standards Track
 category: Mirror
 needs-council-approval: Yes
-status: Final
-last-call-date-time: 2021-11-30T07:00:00Z
+status: Last Call
+last-call-date-time: 2024-05-22T07:00:00Z
 release: v0.22.0
 created: 2021-06-09 
 discussions-to: https://github.com/hashgraph/hedera-improvement-proposal/discussions/82
