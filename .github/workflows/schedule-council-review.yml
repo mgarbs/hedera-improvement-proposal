@@ -45,14 +45,13 @@ jobs:
 
       - name: Schedule status update
         if: steps.check-last-call.outputs.last_call_files != ''
+        env:
+          CRON_EXPRESSION: ${{ github.event.pull_request.merged_at }}
         run: |
           # Process each file in Last Call
           for file in ${{ steps.check-last-call.outputs.last_call_files }}; do
             # Extract the 'last-call-date-time' value from the HIP file
-            last_call_date=$(grep -oP '(?<=^last-call-date-time: )[0-9]{4}-[0-9]{2}-[0-9]{2}' "$file")
-
-            # Calculate the target date (2 weeks from the 'last-call-date-time')
-            target_date=$(date -d "$last_call_date + 14 days" +%Y-%m-%d)
+            last_call_date_time=$(grep -oP '(?<=^last-call-date-time: )[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z' "$file")
 
             # Get the 'type' value from the HIP file
             hip_type=$(grep -oP '(?<=^type: )\w+' "$file")
@@ -72,15 +71,14 @@ jobs:
             fi
 
             # Schedule the status update job
-            echo "Scheduling status update for $file to $new_status on $target_date"
-            echo "status_update_file=$file" >> $GITHUB_OUTPUT
-            echo "status_update_date=$target_date" >> $GITHUB_OUTPUT
-            echo "status_update_status=$new_status" >> $GITHUB_OUTPUT
-          done
+            echo "Scheduling status update for $file to $new_status at $last_call_date_time"
+            echo "::set-output name=status_update_file::$file"
+            echo "::set-output name=status_update_status::$new_status"
+            echo "$last_call_date_time" > .github/workflows/schedule.txt
 
   update-status:
     needs: check-merged-file
-    if: needs.check-merged-file.outputs.status_update_file != '' && needs.check-merged-file.outputs.status_update_date != '' && needs.check-merged-file.outputs.status_update_status != ''
+    if: needs.check-merged-file.outputs.status_update_file != '' && needs.check-merged-file.outputs.status_update_status != ''
     runs-on: ubuntu-latest
 
     steps:
@@ -89,10 +87,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Wait until status update date
+      - name: Read schedule file
+        id: read-schedule
+        run: echo "::set-output name=schedule::$(cat .github/workflows/schedule.txt)"
+
+      - name: Wait until scheduled time
+        env:
+          SCHEDULE: ${{ steps.read-schedule.outputs.schedule }}
         run: |
-          while [[ "$(date +%Y-%m-%d)" < "${{ needs.check-merged-file.outputs.status_update_date }}" ]]; do
-            sleep 3600  # Wait for 1 hour
+          echo "Waiting until $SCHEDULE"
+          while [[ "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" < "$SCHEDULE" ]]; do
+            sleep 60
           done
 
       - name: Update HIP status
