@@ -5,9 +5,11 @@ author: Leemon Baird <leemon@hedera.com>
 type: Standards Track
 category: Service
 needs-council-approval: Yes
-status: Final
-discussions-to: https://github.com/hashgraph/hedera-improvement-proposal/discussions/187
-last-call-date-time: 2021-12-03T07:00:00Z
+status: Last Call
+release: v0.26.0
+created: 2022-03-28
+discussions-to: https://github.com/hashgraph/hedera-improvement-proposal/discussions/434
+last-call-date-time: 2024-05-09T23:10:00Z
 release: v0.21.0
 created: 2021-11-01
 updated: 2021-11-30, 2021-12-17, 2022-04-26
