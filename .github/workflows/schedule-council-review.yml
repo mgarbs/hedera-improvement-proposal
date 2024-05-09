@@ -21,25 +21,40 @@ jobs:
         id: get-modified-files
         run: |
           # Get the modified files from the merged pull request
-          MODIFIED_FILES=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | grep -E '^HIP/.*\.md$')
+          MODIFIED_FILES=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }})
           echo "Modified files: $MODIFIED_FILES"
           echo "modified_files<<EOF" >> $GITHUB_OUTPUT
           echo "$MODIFIED_FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check if modified files are in HIP directory and have .md extension
+        if: steps.get-modified-files.outputs.modified_files != ''
+        id: check-hip-files
+        run: |
+          # Filter the modified files to only include those in the HIP directory with .md extension
+          HIP_FILES=""
+          while IFS= read -r file; do
+            if [[ $file == HIP/*.md ]]; then
+              HIP_FILES="$HIP_FILES $file"
+            fi
+          done <<< "${{ steps.get-modified-files.outputs.modified_files }}"
           
-          # Print an error message if no modified files are found
-          if [ -z "$MODIFIED_FILES" ]; then
+          # Print an error message if no modified HIP files are found
+          if [ -z "$HIP_FILES" ]; then
             echo "No modified HIP files found."
             exit 1
+          else
+            echo "Modified HIP files: $HIP_FILES"
+            echo "hip_files=$HIP_FILES" >> $GITHUB_OUTPUT
           fi
 
       - name: Check if modified files are in Last Call
-        if: steps.get-modified-files.outputs.modified_files != ''
+        if: steps.check-hip-files.outputs.hip_files != ''
         id: check-last-call
         run: |
           # Check if any of the modified files have a status of 'Last Call'
           last_call_files=""
-          for file in ${{ steps.get-modified-files.outputs.modified_files }}; do
+          for file in ${{ steps.check-hip-files.outputs.hip_files }}; do
             if grep -qE '^status: Last Call' "$file"; then
               last_call_files="$last_call_files $file"
             fi
