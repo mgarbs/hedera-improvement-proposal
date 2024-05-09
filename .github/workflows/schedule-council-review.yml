@@ -14,23 +14,22 @@ jobs:
     steps:
       - name: Check out the code
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
 
       - name: Get modified files
         id: get-modified-files
         run: |
-          # Get the list of modified files
-          git diff-tree --no-commit-id --name-only -r ${{ github.sha }} > modified_files.txt
+          # Get the list of modified files using the GitHub API
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          FILES=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/files" | jq -r '.[].filename')
 
-          # Read the modified files and store them in the output variable
-          MODIFIED_FILES=$(cat modified_files.txt)
-          echo "Modified files: $MODIFIED_FILES"
+          # Print the modified files
+          echo "Modified files:"
+          echo "$FILES"
+
+          # Store the modified files in the output variable
           echo "modified_files<<EOF" >> $GITHUB_OUTPUT
-          echo "$MODIFIED_FILES" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-      # Rest of the steps remain the same
 
       - name: Check if modified files are in HIP directory and have .md extension
         if: steps.get-modified-files.outputs.modified_files != ''
