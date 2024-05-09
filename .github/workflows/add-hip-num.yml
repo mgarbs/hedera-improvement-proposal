@@ -7,7 +7,6 @@ on:
 jobs:
   assign-hip-number:
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out the code
         uses: actions/checkout@v2
@@ -19,25 +18,25 @@ jobs:
         run: |
           # Fetch the master branch to have all necessary references
           git fetch origin master
-          
+
           # Get the modified files in the PR against the master branch
           MODIFIED_FILES=$(git diff --name-only origin/master...$GITHUB_SHA)
           echo "Modified files in PR: $MODIFIED_FILES"
-          
+
           # Use the correct directory path (root/HIP)
           HIP_DIRECTORY='HIP'
           HIP_FILES=$(echo "$MODIFIED_FILES" | grep "^$HIP_DIRECTORY/.*\.md")
           echo "Filtered HIP files: $HIP_FILES"
           echo "::set-output name=hip-files::$HIP_FILES"
-          
+
           # Check if any HIP files were modified
           if [ -z "$HIP_FILES" ]; then
             echo "No modified HIP files found."
             echo "::set-output name=new-hip::false"
             exit 0
           fi
-          
-          # Check if any of the HIP files have an assigned number
+
+          # Check if the PR contains only new HIP files
           NEW_HIP=true
           for file in $HIP_FILES; do
             if grep -q '^hip: \[0-9\]' "$file"; then
@@ -47,7 +46,7 @@ jobs:
               break
             fi
           done
-          
+
           if [ "$NEW_HIP" = "true" ]; then
             echo "This PR creates a new HIP."
             echo "::set-output name=new-hip::true"
@@ -61,9 +60,9 @@ jobs:
           PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
           HIP_HEADER="hip: $PR_NUMBER"
           HIP_FILE=$(echo "${{ steps.check-new.outputs.hip-files }}" | head -n 1)
-          
+
           echo "Assigning HIP number to file: $HIP_FILE"
-          
+
           if [ -n "$HIP_FILE" ]; then
             sed -i "s/^hip:.*$/$HIP_HEADER/" "$HIP_FILE"
           else
@@ -76,7 +75,7 @@ jobs:
         run: |
           PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
           HIP_FILE=$(echo "${{ steps.check-new.outputs.hip-files }}" | head -n 1)
-          
+
           if [ -n "$HIP_FILE" ]; then
             NEW_HIP_FILE="HIP/hip-$PR_NUMBER.md"
             mv "$HIP_FILE" "$NEW_HIP_FILE"
@@ -90,6 +89,7 @@ jobs:
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
+
           PR_NUMBER=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
           git add HIP/
           git commit -m "Assigning HIP $PR_NUMBER and renaming file to hip-$PR_NUMBER.md"

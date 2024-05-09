@@ -17,58 +17,66 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get modified file
-        id: get-modified-file
+      - name: Get modified files
+        id: get-modified-files
         run: |
-          # Get the modified file from the merged pull request
-          MODIFIED_FILE=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | grep -E '^HIP/.*\.md$')
-          echo "Modified file: $MODIFIED_FILE"
-          echo "modified_file=$MODIFIED_FILE" >> $GITHUB_OUTPUT
+          # Get the modified files from the merged pull request
+          MODIFIED_FILES=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | grep -E '^HIP/.*\.md$')
+          echo "Modified files: $MODIFIED_FILES"
+          echo "modified_files=$MODIFIED_FILES" >> $GITHUB_OUTPUT
 
-      - name: Check if modified file is in Last Call
-        if: steps.get-modified-file.outputs.modified_file != ''
+      - name: Check if modified files are in Last Call
+        if: steps.get-modified-files.outputs.modified_files != ''
         id: check-last-call
         run: |
-          # Check if the modified file has a status of 'Last Call'
-          if grep -qE '^status: Last Call' "${{ steps.get-modified-file.outputs.modified_file }}"; then
-            echo "File is in Last Call"
-            echo "last_call=true" >> $GITHUB_OUTPUT
+          # Check if any of the modified files have a status of 'Last Call'
+          last_call_files=""
+          for file in ${{ steps.get-modified-files.outputs.modified_files }}; do
+            if grep -qE '^status: Last Call' "$file"; then
+              last_call_files="$last_call_files $file"
+            fi
+          done
+          if [[ -n "$last_call_files" ]]; then
+            echo "Files in Last Call: $last_call_files"
+            echo "last_call_files=$last_call_files" >> $GITHUB_OUTPUT
           else
-            echo "File is not in Last Call"
-            echo "last_call=false" >> $GITHUB_OUTPUT
+            echo "No files in Last Call"
           fi
 
       - name: Schedule status update
-        if: steps.check-last-call.outputs.last_call == 'true'
+        if: steps.check-last-call.outputs.last_call_files != ''
         run: |
-          # Extract the 'last-call-date-time' value from the HIP file
-          last_call_date=$(grep -oP '(?<=^last-call-date-time: )[0-9]{4}-[0-9]{2}-[0-9]{2}' "${{ steps.get-modified-file.outputs.modified_file }}")
+          # Process each file in Last Call
+          for file in ${{ steps.check-last-call.outputs.last_call_files }}; do
+            # Extract the 'last-call-date-time' value from the HIP file
+            last_call_date=$(grep -oP '(?<=^last-call-date-time: )[0-9]{4}-[0-9]{2}-[0-9]{2}' "$file")
 
-          # Calculate the target date (2 weeks from the 'last-call-date-time')
-          target_date=$(date -d "$last_call_date + 14 days" +%Y-%m-%d)
+            # Calculate the target date (2 weeks from the 'last-call-date-time')
+            target_date=$(date -d "$last_call_date + 14 days" +%Y-%m-%d)
 
-          # Get the 'type' value from the HIP file
-          hip_type=$(grep -oP '(?<=^type: )\w+' "${{ steps.get-modified-file.outputs.modified_file }}")
+            # Get the 'type' value from the HIP file
+            hip_type=$(grep -oP '(?<=^type: )\w+' "$file")
 
-          # Get the 'category' value from the HIP file
-          hip_category=$(grep -oP '(?<=^category: )\w+' "${{ steps.get-modified-file.outputs.modified_file }}")
+            # Get the 'category' value from the HIP file
+            hip_category=$(grep -oP '(?<=^category: )\w+' "$file")
 
-          # Determine the new status based on the 'type' and 'category'
-          if [[ "$hip_type" == "Standards Track" ]]; then
-            if [[ "$hip_category" == "Application" ]]; then
-              new_status="Accepted"
-            else
-              new_status="Council Review"
+            # Determine the new status based on the 'type' and 'category'
+            if [[ "$hip_type" == "Standards Track" ]]; then
+              if [[ "$hip_category" == "Core" || "$hip_category" == "Service" || "$hip_category" == "Mirror" ]]; then
+                new_status="Council Review"
+              elif [[ "$hip_category" == "Application" ]]; then
+                new_status="Accepted"
+              fi
+            elif [[ "$hip_type" == "Informational" || "$hip_type" == "Process" ]]; then
+              new_status="Active"
             fi
-          elif [[ "$hip_type" == "Informational" || "$hip_type" == "Process" ]]; then
-            new_status="Active"
-          fi
 
-          # Schedule the status update job
-          echo "Scheduling status update for ${{ steps.get-modified-file.outputs.modified_file }} to $new_status on $target_date"
-          echo "status_update_file=${{ steps.get-modified-file.outputs.modified_file }}" >> $GITHUB_OUTPUT
-          echo "status_update_date=$target_date" >> $GITHUB_OUTPUT
-          echo "status_update_status=$new_status" >> $GITHUB_OUTPUT
+            # Schedule the status update job
+            echo "Scheduling status update for $file to $new_status on $target_date"
+            echo "status_update_file=$file" >> $GITHUB_OUTPUT
+            echo "status_update_date=$target_date" >> $GITHUB_OUTPUT
+            echo "status_update_status=$new_status" >> $GITHUB_OUTPUT
+          done
 
   update-status:
     needs: check-merged-file
