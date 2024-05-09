@@ -23,11 +23,8 @@ jobs:
           # Fetch the latest changes from the base branch
           git fetch origin ${{ github.base_ref }}
 
-          # Get the merge base between the base branch and the pull request head
-          MERGE_BASE=$(git merge-base origin/${{ github.base_ref }} ${{ github.event.pull_request.head.sha }})
-
-          # Get the modified files between the merge base and the pull request head
-          MODIFIED_FILES=$(git diff --name-only $MERGE_BASE ${{ github.event.pull_request.head.sha }})
+          # Get the modified files between the base branch and the pull request branch
+          MODIFIED_FILES=$(git diff --name-only origin/${{ github.base_ref }}..origin/${{ github.head_ref }})
           echo "Modified files: $MODIFIED_FILES"
           echo "modified_files<<EOF" >> $GITHUB_OUTPUT
           echo "$MODIFIED_FILES" >> $GITHUB_OUTPUT
@@ -71,16 +68,11 @@ jobs:
             echo "No files in Last Call"
           fi
 
-      - name: Schedule status update
+      - name: Update HIP status
         if: steps.check-last-call.outputs.last_call_files != ''
-        env:
-          CRON_EXPRESSION: ${{ github.event.pull_request.merged_at }}
         run: |
           # Process each file in Last Call
           for file in ${{ steps.check-last-call.outputs.last_call_files }}; do
-            # Extract the 'last-call-date-time' value from the HIP file
-            last_call_date_time=$(grep -oP '(?<=^last-call-date-time: )[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z' "$file")
-
             # Get the 'type' value from the HIP file
             hip_type=$(grep -oP '(?<=^type: )\w+' "$file")
 
@@ -98,47 +90,18 @@ jobs:
               new_status="Active"
             fi
 
-            # Schedule the status update job
-            echo "Scheduling status update for $file to $new_status at $last_call_date_time"
-            echo "::set-output name=status_update_file::$file"
-            echo "::set-output name=status_update_status::$new_status"
-            echo "$last_call_date_time" > .github/workflows/schedule.txt
-
-  update-status:
-    needs: check-merged-file
-    if: needs.check-merged-file.outputs.status_update_file != '' && needs.check-merged-file.outputs.status_update_status != ''
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Read schedule file
-        id: read-schedule
-        run: echo "::set-output name=schedule::$(cat .github/workflows/schedule.txt)"
-
-      - name: Wait until scheduled time
-        env:
-          SCHEDULE: ${{ steps.read-schedule.outputs.schedule }}
-        run: |
-          echo "Waiting until $SCHEDULE"
-          while [[ "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" < "$SCHEDULE" ]]; do
-            sleep 60
-          done
-
-      - name: Update HIP status
-        run: |
-          sed -i "s/^status: Last Call/status: ${{ needs.check-merged-file.outputs.status_update_status }}/" "${{ needs.check-merged-file.outputs.status_update_file }}"
+            # Update the HIP status in the file
+            sed -i "s/^status: Last Call/status: $new_status/" "$file"
+            echo "Updated status of $file to $new_status"
 
       - name: Create PR for status update
+        if: steps.check-last-call.outputs.last_call_files != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
-          git add "${{ needs.check-merged-file.outputs.status_update_file }}"
-          git commit -m "Update status of ${{ needs.check-merged-file.outputs.status_update_file }} to ${{ needs.check-merged-file.outputs.status_update_status }}"
+          git add .
+          git commit -m "Update HIP status"
           git push origin HEAD:status-update-${{ github.sha }}
-          gh pr create --title "Update status of ${{ needs.check-merged-file.outputs.status_update_file }} to ${{ needs.check-merged-file.outputs.status_update_status }}" --body "Automatically updating the status of ${{ needs.check-merged-file.outputs.status_update_file }} to ${{ needs.check-merged-file.outputs.status_update_status }} based on the last-call-date-time." --base master --head status-update-${{ github.sha }}
+          gh pr create --title "Update HIP status" --body "Automatically updating the status of HIPs in Last Call based on the type and category." --base master --head status-update-${{ github.sha }}
