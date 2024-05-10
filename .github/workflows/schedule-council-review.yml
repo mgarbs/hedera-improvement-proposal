@@ -1,4 +1,4 @@
-name: Schedule Status Update
+name: Schedule Status Update Based on Last Call Time
 
 permissions:
   pull-requests: write
@@ -48,7 +48,6 @@ jobs:
           else
             echo "Modified HIP files: $HIP_FILES"
             echo "hip_files=$HIP_FILES" >> $GITHUB_OUTPUT
-          fi
 
       - name: Check if modified files are in Last Call
         if: steps.check-hip-files.outputs.hip_files != ''
@@ -68,23 +67,50 @@ jobs:
             echo "No files in Last Call"
           fi
 
+      - name: Calculate Delay Until Last Call
+        if: steps.check-last-call.outputs.last_call_files != ''
+        id: calculate-delay
+        run: |
+          # Extract the last-call-date-time from the first file in Last Call
+          first_last_call_file=$(echo "${{ steps.check-last-call.outputs.last_call_files }}" | awk '{print $1}')
+          last_call_time=$(grep -oP '(?<=^last-call-date-time: ).*' "$first_last_call_file")
+
+          echo "Last Call Date Time: $last_call_time"
+
+          # Calculate delay in seconds
+          target_epoch=$(date -d "$last_call_time" +%s)
+          current_epoch=$(date +%s)
+          delay_seconds=$((target_epoch - current_epoch))
+
+          echo "Delay in seconds: $delay_seconds"
+
+          # Ensure a positive delay before continuing
+          if [[ $delay_seconds -gt 0 ]]; then
+            echo "Delaying PR creation and automerge for $delay_seconds seconds."
+            echo "delay_seconds=$delay_seconds" >> $GITHUB_OUTPUT
+          else
+            echo "The last-call date-time is in the past. Skipping delay."
+            exit 1
+
+      - name: Delay Until Last Call
+        if: steps.calculate-delay.outputs.delay_seconds != ''
+        run: |
+          delay_seconds=${{ steps.calculate-delay.outputs.delay_seconds }}
+          echo "Sleeping for $delay_seconds seconds"
+          sleep "$delay_seconds"
+
       - name: Update HIP status
         if: steps.check-last-call.outputs.last_call_files != ''
         run: |
           for file in ${{ steps.check-last-call.outputs.last_call_files }}; do
-            # Extract type and category (allow multi-word phrases)
             hip_type=$(grep -oP '(?<=^type: ).*' "$file")
             hip_category=$(grep -oP '(?<=^category: ).*' "$file")
 
-            # Log extracted type and category for debugging purposes
             echo "Processing file: $file"
             echo "Extracted type: $hip_type"
             echo "Extracted category: $hip_category"
 
-            # Initialize new_status to an empty string
             new_status=""
-
-            # Determine new status based on the type and category
             if [[ "$hip_type" == "Standards Track" ]]; then
               if [[ "$hip_category" == "Core" || "$hip_category" == "Service" || "$hip_category" == "Mirror" ]]; then
                 new_status="Council Review"
@@ -95,14 +121,12 @@ jobs:
               new_status="Active"
             fi
 
-            # Verify that new_status has been set correctly
             if [[ -n "$new_status" ]]; then
               sed -i "s/^status: Last Call/status: $new_status/" "$file"
               echo "Updated status of $file to $new_status"
             else
               echo "Unable to determine the new status for $file. Check the type and category fields."
             fi
-          done
 
       - name: Create PR for status update
         if: steps.check-last-call.outputs.last_call_files != ''
@@ -124,14 +148,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Extract PR number from the PR URL using grep
           PR_NUMBER=$(echo "${{ steps.create-pr.outputs.pr_url }}" | grep -oP '\d+$')
-          # Confirm the PR number is correct before merging
           echo "Merging PR number: $PR_NUMBER"
-          # Automatically merge the PR using the GitHub CLI
           gh pr merge $PR_NUMBER --merge --auto --body "Auto-merged via GitHub Actions"
-
-
-
-
-
