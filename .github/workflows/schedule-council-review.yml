@@ -48,6 +48,7 @@ jobs:
           else
             echo "Modified HIP files: $HIP_FILES"
             echo "hip_files=$HIP_FILES" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check if modified files are in Last Call
         if: steps.check-hip-files.outputs.hip_files != ''
