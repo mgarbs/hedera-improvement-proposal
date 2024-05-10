@@ -1,5 +1,9 @@
 name: Schedule Status Update
 
+permissions:
+  pull-requests: write
+  contents: write
+
 on:
   pull_request:
     types: [closed]
