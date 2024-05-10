@@ -32,7 +32,7 @@ jobs:
           echo "$FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Check if modified files are in HIP directory and have .md extension
+      - name: Check if modified files are in the HIP directory and have a .md extension
         if: steps.get-modified-files.outputs.modified_files != ''
         id: check-hip-files
         run: |
@@ -42,12 +42,13 @@ jobs:
               HIP_FILES="$HIP_FILES $file"
             fi
           done <<< "${{ steps.get-modified-files.outputs.modified_files }}"
-          
+
           if [ -z "$HIP_FILES" ]; then
             echo "No modified HIP files found."
           else
             echo "Modified HIP files: $HIP_FILES"
             echo "hip_files=$HIP_FILES" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check if modified files are in Last Call
         if: steps.check-hip-files.outputs.hip_files != ''
@@ -71,26 +72,24 @@ jobs:
         if: steps.check-last-call.outputs.last_call_files != ''
         id: calculate-delay
         run: |
-          # Extract the last-call-date-time from the first file in Last Call
           first_last_call_file=$(echo "${{ steps.check-last-call.outputs.last_call_files }}" | awk '{print $1}')
           last_call_time=$(grep -oP '(?<=^last-call-date-time: ).*' "$first_last_call_file")
 
           echo "Last Call Date Time: $last_call_time"
 
-          # Calculate delay in seconds
           target_epoch=$(date -d "$last_call_time" +%s)
           current_epoch=$(date +%s)
           delay_seconds=$((target_epoch - current_epoch))
 
           echo "Delay in seconds: $delay_seconds"
 
-          # Ensure a positive delay before continuing
           if [[ $delay_seconds -gt 0 ]]; then
             echo "Delaying PR creation and automerge for $delay_seconds seconds."
             echo "delay_seconds=$delay_seconds" >> $GITHUB_OUTPUT
           else
             echo "The last-call date-time is in the past. Skipping delay."
             exit 1
+          fi
 
       - name: Delay Until Last Call
         if: steps.calculate-delay.outputs.delay_seconds != ''
@@ -127,6 +126,7 @@ jobs:
             else
               echo "Unable to determine the new status for $file. Check the type and category fields."
             fi
+          done
 
       - name: Create PR for status update
         if: steps.check-last-call.outputs.last_call_files != ''
