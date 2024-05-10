@@ -18,15 +18,12 @@ jobs:
       - name: Get modified files
         id: get-modified-files
         run: |
-          # Get the list of modified files using the GitHub API
           PR_NUMBER=${{ github.event.pull_request.number }}
           FILES=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER/files" | jq -r '.[].filename')
 
-          # Print the modified files
           echo "Modified files:"
           echo "$FILES"
 
-          # Store the modified files in the output variable
           echo "modified_files<<EOF" >> $GITHUB_OUTPUT
           echo "$FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -35,7 +32,6 @@ jobs:
         if: steps.get-modified-files.outputs.modified_files != ''
         id: check-hip-files
         run: |
-          # Filter the modified files to only include those in the HIP directory with .md extension
           HIP_FILES=""
           while IFS= read -r file; do
             if [[ $file == HIP/*.md ]]; then
@@ -43,7 +39,6 @@ jobs:
             fi
           done <<< "${{ steps.get-modified-files.outputs.modified_files }}"
           
-          # Print the modified HIP files
           if [ -z "$HIP_FILES" ]; then
             echo "No modified HIP files found."
           else
@@ -55,13 +50,13 @@ jobs:
         if: steps.check-hip-files.outputs.hip_files != ''
         id: check-last-call
         run: |
-          # Check if any of the modified files have a status of 'Last Call'
           last_call_files=""
           for file in ${{ steps.check-hip-files.outputs.hip_files }}; do
             if grep -qE '^status: Last Call' "$file"; then
               last_call_files="$last_call_files $file"
             fi
           done
+
           if [[ -n "$last_call_files" ]]; then
             echo "Files in Last Call: $last_call_files"
             echo "last_call_files=$last_call_files" >> $GITHUB_OUTPUT
@@ -72,15 +67,10 @@ jobs:
       - name: Update HIP status
         if: steps.check-last-call.outputs.last_call_files != ''
         run: |
-          # Process each file in Last Call
           for file in ${{ steps.check-last-call.outputs.last_call_files }}; do
-            # Get the 'type' value from the HIP file
             hip_type=$(grep -oP '(?<=^type: )\w+' "$file")
-
-            # Get the 'category' value from the HIP file
             hip_category=$(grep -oP '(?<=^category: )\w+' "$file")
 
-            # Determine the new status based on the 'type' and 'category'
             if [[ "$hip_type" == "Standards Track" ]]; then
               if [[ "$hip_category" == "Core" || "$hip_category" == "Service" || "$hip_category" == "Mirror" ]]; then
                 new_status="Council Review"
@@ -91,9 +81,9 @@ jobs:
               new_status="Active"
             fi
 
-            # Update the HIP status in the file
             sed -i "s/^status: Last Call/status: $new_status/" "$file"
             echo "Updated status of $file to $new_status"
+          done
 
       - name: Create PR for status update
         if: steps.check-last-call.outputs.last_call_files != ''
