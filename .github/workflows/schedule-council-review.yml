@@ -87,7 +87,7 @@ jobs:
           else
             echo "The last-call date-time is in the past. Skipping delay."
             exit 1
-        fi
+          fi
 
       - name: Delay Until Last Call
         if: steps.calculate-delay.outputs.delay_seconds != ''
