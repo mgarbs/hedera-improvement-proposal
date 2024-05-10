@@ -5,12 +5,12 @@ author: Chris Campbell <chris@launchbadge.com>
 type: Standards Track
 category: Service
 needs-council-approval: Yes
-status: Last Call
+status: Council Review
 last-call-date-time: 2024-05-10T03:53:08Z
 release: v0.22.0
 created: 2021-10-14
 discussions-to: https://github.com/hashgraph/hedera-improvement-proposal/issues/165
-updated: 2021-10-25, 2022-03-16, 2022-04-26
+updated: 2024-05-10
 ---
 
 ## Abstract
