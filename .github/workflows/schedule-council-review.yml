@@ -114,4 +114,17 @@ jobs:
           git add .
           git commit -m "Update HIP status"
           git push origin HEAD:status-update-${{ github.sha }}
-          gh pr create --title "Update HIP status" --body "Automatically updating the status of HIPs in Last Call based on the type and category." --base master --head status-update-${{ github.sha }}
+          gh auth login --with-token <<< "$GITHUB_TOKEN"
+          PR_URL=$(gh pr create --title "Update HIP status" --body "Automatically updating the status of HIPs in Last Call based on the type and category." --base master --head status-update-${{ github.sha }})
+          echo "Pull request created at $PR_URL"
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+
+      - name: Auto-merge PR
+        if: steps.create-pr.outputs.pr_url != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=$(echo "${{ steps.create-pr.outputs.pr_url }}" | grep -oP '\d+$')
+          gh auth login --with-token <<< "$GITHUB_TOKEN"
+          gh pr merge $PR_NUMBER --merge --admin --auto --body "Auto-merged via GitHub Actions"
+
