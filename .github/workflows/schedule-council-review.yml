@@ -129,7 +129,8 @@ jobs:
           # Confirm the PR number is correct before merging
           echo "Merging PR number: $PR_NUMBER"
           # Automatically merge the PR using the GitHub CLI
-          gh pr merge $PR_NUMBER --auto --body "Auto-merged via GitHub Actions"
+          gh pr merge $PR_NUMBER --merge --auto --body "Auto-merged via GitHub Actions"
+
 
 
 
