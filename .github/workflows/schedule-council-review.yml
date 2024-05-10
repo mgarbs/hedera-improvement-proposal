@@ -30,7 +30,7 @@ jobs:
 
           echo "modified_files<<EOF" >> $GITHUB_OUTPUT
           echo "$FILES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "EOF"
 
       - name: Check if modified files are in the HIP directory and have a .md extension
         if: steps.get-modified-files.outputs.modified_files != ''
@@ -43,12 +43,11 @@ jobs:
             fi
           done <<< "${{ steps.get-modified-files.outputs.modified_files }}"
 
-          if [ -z "$HIP_FILES" ]; then
+          if [ -z "$HIP_FILES" ]]; then
             echo "No modified HIP files found."
           else
             echo "Modified HIP files: $HIP_FILES"
             echo "hip_files=$HIP_FILES" >> $GITHUB_OUTPUT
-          fi
 
       - name: Check if modified files are in Last Call
         if: steps.check-hip-files.outputs.hip_files != ''
@@ -66,7 +65,6 @@ jobs:
             echo "last_call_files=$last_call_files" >> $GITHUB_OUTPUT
           else
             echo "No files in Last Call"
-          fi
 
       - name: Calculate Delay Until Last Call
         if: steps.check-last-call.outputs.last_call_files != ''
@@ -89,7 +87,7 @@ jobs:
           else
             echo "The last-call date-time is in the past. Skipping delay."
             exit 1
-          fi
+        fi
 
       - name: Delay Until Last Call
         if: steps.calculate-delay.outputs.delay_seconds != ''
@@ -98,9 +96,10 @@ jobs:
           echo "Sleeping for $delay_seconds seconds"
           sleep "$delay_seconds"
 
-      - name: Update HIP status
+      - name: Update HIP status and Add/Update `updated` Date
         if: steps.check-last-call.outputs.last_call_files != ''
         run: |
+          current_date=$(date +%Y-%m-%d)
           for file in ${{ steps.check-last-call.outputs.last_call_files }}; do
             hip_type=$(grep -oP '(?<=^type: ).*' "$file")
             hip_category=$(grep -oP '(?<=^category: ).*' "$file")
@@ -121,12 +120,19 @@ jobs:
             fi
 
             if [[ -n "$new_status" ]]; then
+              # Update status
               sed -i "s/^status: Last Call/status: $new_status/" "$file"
-              echo "Updated status of $file to $new_status"
+              
+              # Update or add `updated` property before the final "---"
+              if grep -q '^updated: ' "$file"; then
+                sed -i "s/^updated:.*/updated: $current_date/" "$file"
+              else
+                sed -i "/^---$/i updated: $current_date" "$file"
+              fi
+              echo "Updated status of $file to $new_status and set updated date to $current_date"
             else
               echo "Unable to determine the new status for $file. Check the type and category fields."
             fi
-          done
 
       - name: Create PR for status update
         if: steps.check-last-call.outputs.last_call_files != ''
@@ -137,9 +143,9 @@ jobs:
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
           git add .
-          git commit -m "Update HIP status"
+          git commit -m "Update HIP status and set updated date"
           git push origin HEAD:status-update-${{ github.sha }}
-          PR_URL=$(gh pr create --title "Update HIP status" --body "Automatically updating the status of HIPs in Last Call based on the type and category." --base master --head status-update-${{ github.sha }})
+          PR_URL=$(gh pr create --title "Update HIP status" --body "Automatically updating the status of HIPs in Last Call and setting the updated date based on the type and category." --base master --head status-update-${{ github.sha }})
           echo "Pull request created at $PR_URL"
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
 
