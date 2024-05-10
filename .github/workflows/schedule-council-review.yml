@@ -72,9 +72,9 @@ jobs:
         if: steps.check-last-call.outputs.last_call_files != ''
         run: |
           for file in ${{ steps.check-last-call.outputs.last_call_files }}; do
-            # Extract type and category
-            hip_type=$(grep -oP '(?<=^type: )\w+' "$file")
-            hip_category=$(grep -oP '(?<=^category: )\w+' "$file")
+            # Extract type and category (allow multi-word phrases)
+            hip_type=$(grep -oP '(?<=^type: ).*' "$file")
+            hip_category=$(grep -oP '(?<=^category: ).*' "$file")
 
             # Log extracted type and category for debugging purposes
             echo "Processing file: $file"
@@ -103,7 +103,6 @@ jobs:
               echo "Unable to determine the new status for $file. Check the type and category fields."
             fi
           done
-
 
       - name: Create PR for status update
         if: steps.check-last-call.outputs.last_call_files != ''
