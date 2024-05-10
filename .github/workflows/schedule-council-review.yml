@@ -30,7 +30,7 @@ jobs:
 
           echo "modified_files<<EOF" >> $GITHUB_OUTPUT
           echo "$FILES" >> $GITHUB_OUTPUT
-          echo "EOF"
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Check if modified files are in the HIP directory and have a .md extension
         if: steps.get-modified-files.outputs.modified_files != ''
@@ -43,7 +43,7 @@ jobs:
             fi
           done <<< "${{ steps.get-modified-files.outputs.modified_files }}"
 
-          if [ -z "$HIP_FILES" ]]; then
+          if [ -z "$HIP_FILES" ]; then
             echo "No modified HIP files found."
           else
             echo "Modified HIP files: $HIP_FILES"
@@ -65,6 +65,7 @@ jobs:
             echo "last_call_files=$last_call_files" >> $GITHUB_OUTPUT
           else
             echo "No files in Last Call"
+          fi
 
       - name: Calculate Delay Until Last Call
         if: steps.check-last-call.outputs.last_call_files != ''
@@ -133,6 +134,7 @@ jobs:
             else
               echo "Unable to determine the new status for $file. Check the type and category fields."
             fi
+          done
 
       - name: Create PR for status update
         if: steps.check-last-call.outputs.last_call_files != ''
