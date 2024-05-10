@@ -75,6 +75,8 @@ jobs:
             hip_type=$(grep -oP '(?<=^type: )\w+' "$file")
             hip_category=$(grep -oP '(?<=^category: )\w+' "$file")
 
+            new_status=""
+
             if [[ "$hip_type" == "Standards Track" ]]; then
               if [[ "$hip_category" == "Core" || "$hip_category" == "Service" || "$hip_category" == "Mirror" ]]; then
                 new_status="Council Review"
@@ -85,9 +87,14 @@ jobs:
               new_status="Active"
             fi
 
-            sed -i "s/^status: Last Call/status: $new_status/" "$file"
-            echo "Updated status of $file to $new_status"
+            if [[ -n "$new_status" ]]; then
+              sed -i "s/^status: Last Call/status: $new_status/" "$file"
+              echo "Updated status of $file to $new_status"
+            else
+              echo "Unable to determine new status for $file. Check type and category."
+            fi
           done
+
 
       - name: Create PR for status update
         if: steps.check-last-call.outputs.last_call_files != ''
