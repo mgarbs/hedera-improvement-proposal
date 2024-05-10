@@ -74,7 +74,8 @@ jobs:
           for file in ${{ steps.check-last-call.outputs.last_call_files }}; do
             hip_type=$(grep -oP '(?<=^type: )\w+' "$file")
             hip_category=$(grep -oP '(?<=^category: )\w+' "$file")
-
+            
+            # Initialize new_status to an empty string
             new_status=""
 
             if [[ "$hip_type" == "Standards Track" ]]; then
@@ -87,14 +88,14 @@ jobs:
               new_status="Active"
             fi
 
+            # Verify that new_status has been set correctly
             if [[ -n "$new_status" ]]; then
               sed -i "s/^status: Last Call/status: $new_status/" "$file"
               echo "Updated status of $file to $new_status"
             else
-              echo "Unable to determine new status for $file. Check type and category."
+              echo "Unable to determine the new status for $file. Check the type and category fields."
             fi
           done
-
 
       - name: Create PR for status update
         if: steps.check-last-call.outputs.last_call_files != ''
