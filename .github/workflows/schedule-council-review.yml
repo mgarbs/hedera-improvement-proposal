@@ -108,6 +108,7 @@ jobs:
         if: steps.check-last-call.outputs.last_call_files != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: create-pr
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
@@ -123,7 +124,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Extract PR number from the PR URL using grep
           PR_NUMBER=$(echo "${{ steps.create-pr.outputs.pr_url }}" | grep -oP '\d+$')
+          # Confirm the PR number is correct before merging
+          echo "Merging PR number: $PR_NUMBER"
+          # Merge the PR using the GitHub CLI
           gh pr merge $PR_NUMBER --merge --admin --auto --body "Auto-merged via GitHub Actions"
+
 
 
