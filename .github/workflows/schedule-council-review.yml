@@ -128,8 +128,9 @@ jobs:
           PR_NUMBER=$(echo "${{ steps.create-pr.outputs.pr_url }}" | grep -oP '\d+$')
           # Confirm the PR number is correct before merging
           echo "Merging PR number: $PR_NUMBER"
-          # Merge the PR using the GitHub CLI
-          gh pr merge $PR_NUMBER --merge --admin --auto --body "Auto-merged via GitHub Actions"
+          # Automatically merge the PR using the GitHub CLI
+          gh pr merge $PR_NUMBER --auto --body "Auto-merged via GitHub Actions"
+
 
 
 
