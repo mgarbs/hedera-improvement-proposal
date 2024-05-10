@@ -1,5 +1,5 @@
 ---
-hip: <HIP number (this is determined by the HIP editor)>
+hip: 52
 title: <HIP title>
 author: <a list of the author’s or authors’ name(s) and/or username(s), or name(s) and email(s).>
 working-group: a list of the technical and business stakeholders' name(s) and/or username(s), or name(s) and email(s).
