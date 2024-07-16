@@ -1,4 +1,4 @@
 # Test HIP
 
-hip: <number>
+hip: 55
 title: Test HIP
