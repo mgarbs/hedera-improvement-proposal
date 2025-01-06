@@ -1,0 +1,113 @@
+name: Test Draft HIPs Data Collection
+
+on:
+  workflow_dispatch:  # This allows manual triggering
+  pull_request:      # This runs on PRs
+    branches:
+      - main
+
+jobs:
+  test-draft-hips:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Create Test Script
+        run: |
+          mkdir -p _data
+          cat << 'EOF' > fetch-draft-hips.js
+          const https = require('https');
+
+          const query = `
+            query { 
+              repository(name: "hedera-improvement-proposal", owner: "hashgraph") {
+                pullRequests(first: 10, orderBy: {field: CREATED_AT, direction: DESC}, states: [OPEN]) {
+                  nodes {
+                    title
+                    number
+                    url
+                    headRefOid
+                    files(last: 10) {
+                      edges {
+                        node {
+                          path
+                          additions
+                          deletions
+                        }
+                      }
+                    }
+                    author {
+                      login
+                    }
+                  }
+                }
+              }
+            }
+          `;
+
+          const options = {
+            hostname: 'api.github.com',
+            path: '/graphql',
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
+              'Content-Type': 'application/json',
+              'User-Agent': 'Node.js'
+            }
+          };
+
+          const req = https.request(options, (res) => {
+            let data = '';
+            
+            res.on('data', (chunk) => {
+              data += chunk;
+            });
+            
+            res.on('end', () => {
+              const result = JSON.parse(data);
+              if (result.errors) {
+                console.error('GraphQL errors:', result.errors);
+                process.exit(1);
+              }
+              
+              // Log the results for testing
+              console.log('API Response Status:', res.statusCode);
+              console.log('Number of PRs fetched:', result.data.repository.pullRequests.nodes.length);
+              console.log('\nFirst PR data sample:');
+              console.log(JSON.stringify(result.data.repository.pullRequests.nodes[0], null, 2));
+              
+              // Write the data to file
+              const fs = require('fs');
+              fs.writeFileSync('_data/draft_hips.json', JSON.stringify(result.data.repository.pullRequests.nodes, null, 2));
+            });
+          });
+
+          req.on('error', (error) => {
+            console.error('Error:', error);
+            process.exit(1);
+          });
+
+          req.write(JSON.stringify({ query }));
+          req.end();
+          EOF
+
+      - name: Run Test Script
+        run: node fetch-draft-hips.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check Output File
+        run: |
+          if [ -f "_data/draft_hips.json" ]; then
+            echo "✅ draft_hips.json was created successfully"
+            echo "File contents preview:"
+            head -n 20 _data/draft_hips.json
+          else
+            echo "❌ Error: draft_hips.json was not created"
+            exit 1
+          fi
