@@ -13,7 +13,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v3
-      
+        with:
+          ref: ${{ github.head_ref }}  # Checkout the PR branch or current branch
+          fetch-depth: 0  # Fetch all history
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -120,4 +123,4 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add _data/draft_hips.json
           git commit -m "Update draft HIPs data from workflow"
-          git push
+          git push origin HEAD:${{ github.head_ref }}
