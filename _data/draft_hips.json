@@ -147,26 +147,6 @@
     }
   },
   {
-    "title": "HIP-991 update according to latest discussion",
-    "number": 1079,
-    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1079",
-    "headRefOid": "2df847c1111cab4cd3c88a2440f84f36a1b5ef03",
-    "files": {
-      "edges": [
-        {
-          "node": {
-            "path": "HIP/hip-991.md",
-            "additions": 50,
-            "deletions": 196
-          }
-        }
-      ]
-    },
-    "author": {
-      "login": "netopyr"
-    }
-  },
-  {
     "title": "Enable KeyList Support in HTS  Precompile",
     "number": 1069,
     "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1069",
@@ -211,6 +191,26 @@
     },
     "author": {
       "login": "Nana-EC"
+    }
+  },
+  {
+    "title": "Update hip-1046.md",
+    "number": 1066,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1066",
+    "headRefOid": "c975af767991e5d81b1a7e97843b6a6873c2efcd",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-1046.md",
+            "additions": 157,
+            "deletions": 79
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "Mark-Swirlds"
     }
   }
 ]
