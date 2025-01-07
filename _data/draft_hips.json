@@ -1,0 +1,216 @@
+[
+  {
+    "title": "Update hip-551.md",
+    "number": 1090,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1090",
+    "headRefOid": "dde87fdba4e66e9dfe6dfc80d9edd166cd1fd452",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-551.md",
+            "additions": 99,
+            "deletions": 60
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "ty-swirldslabs"
+    }
+  },
+  {
+    "title": "Updates to HIP-869",
+    "number": 1089,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1089",
+    "headRefOid": "973433ada73f0832ebbce3696f2dd0ab7c30341f",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-869.md",
+            "additions": 82,
+            "deletions": 33
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "Mark-Swirlds"
+    }
+  },
+  {
+    "title": "Update hip-719.md to Final",
+    "number": 1088,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1088",
+    "headRefOid": "647a611ff8c4ce073bf8b0e3d9080ef387dac42a",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-719.md",
+            "additions": 3,
+            "deletions": 2
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "mgarbs"
+    }
+  },
+  {
+    "title": "Jumbo EthereumTransactions",
+    "number": 1086,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1086",
+    "headRefOid": "ba08caa80a1f3c5b01d4f05105d856b925aa31c8",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-1086.md",
+            "additions": 144,
+            "deletions": 0
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "Nana-EC"
+    }
+  },
+  {
+    "title": "Zero Cost EthereumTransaction on Success",
+    "number": 1084,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1084",
+    "headRefOid": "bf0711184c1ec272f8e20aae80f58bc15d7364e2",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-1084.md",
+            "additions": 119,
+            "deletions": 0
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "Nana-EC"
+    }
+  },
+  {
+    "title": "Allow Setting of EVM Address by EOA",
+    "number": 1082,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1082",
+    "headRefOid": "6ab73e0d50d56feb919832cbb63876508b3f41f4",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-1082.md",
+            "additions": 225,
+            "deletions": 0
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "Nana-EC"
+    }
+  },
+  {
+    "title": "Block Node",
+    "number": 1081,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1081",
+    "headRefOid": "584e30302a4a2c08c55d4a528b65817e8ef1c311",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-1081.md",
+            "additions": 635,
+            "deletions": 0
+          }
+        },
+        {
+          "node": {
+            "path": "assets/hip-1081/protobuf/block_service.proto",
+            "additions": 943,
+            "deletions": 0
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "Nana-EC"
+    }
+  },
+  {
+    "title": "Enable KeyList Support in HTS  Precompile",
+    "number": 1069,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1069",
+    "headRefOid": "ca1f95b43f26269d2ea11b3d1009a56601b2d59c",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-1069.md",
+            "additions": 91,
+            "deletions": 0
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "mgarbs"
+    }
+  },
+  {
+    "title": "Sponsored Fees",
+    "number": 1068,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1068",
+    "headRefOid": "335fc2b104a5d6348f1436d071d28148e2cba634",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-1068.md",
+            "additions": 542,
+            "deletions": 0
+          }
+        },
+        {
+          "node": {
+            "path": "assets/hip-1068/IHRC1068.sol",
+            "additions": 55,
+            "deletions": 0
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "Nana-EC"
+    }
+  },
+  {
+    "title": "Update hip-1046.md",
+    "number": 1066,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1066",
+    "headRefOid": "c975af767991e5d81b1a7e97843b6a6873c2efcd",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-1046.md",
+            "additions": 157,
+            "deletions": 79
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "Mark-Swirlds"
+    }
+  }
+]
