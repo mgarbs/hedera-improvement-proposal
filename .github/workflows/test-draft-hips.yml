@@ -2,24 +2,24 @@ name: Update Draft HIPs Data
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Runs every 6 hours
-  workflow_dispatch:        # Allows manual triggering
+    - cron: "0 */6 * * *" # Runs every 6 hours
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   update-draft-hips:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: read  # Add explicit PR read permission
+      pull-requests: read
     steps:
       - uses: actions/checkout@v3
         with:
           ref: main
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Create Script
         run: |
@@ -137,10 +137,12 @@ jobs:
           echo "Checking results file..."
           if [ -f "_data/draft_hips.json" ]; then
             echo "File exists"
-            SIZE=$(stat -f%z "_data/draft_hips.json")
+            SIZE=$(stat -f %s "_data/draft_hips.json" || stat --format="%s" "_data/draft_hips.json")
             echo "File size: $SIZE bytes"
-            echo "First few lines:"
+            echo "Content preview:"
             head -n 20 "_data/draft_hips.json"
+            echo "Number of PRs:"
+            grep -c "number" "_data/draft_hips.json" || true
           else
             echo "File does not exist!"
             exit 1
