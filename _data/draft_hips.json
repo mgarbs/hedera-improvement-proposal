@@ -1,5 +1,46 @@
 [
   {
+    "title": "Display draft HIPs for Jekyll build",
+    "number": 1093,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1093",
+    "headRefOid": "1aadcc4f89e06e0e76e5af86aba12ba56d3cec27",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": ".github/workflows/update-draft-hips.yml",
+            "additions": 118,
+            "deletions": 0
+          }
+        },
+        {
+          "node": {
+            "path": "_config.yml",
+            "additions": 3,
+            "deletions": 0
+          }
+        },
+        {
+          "node": {
+            "path": "_includes/head.html",
+            "additions": 0,
+            "deletions": 1
+          }
+        },
+        {
+          "node": {
+            "path": "assets/js/pr-integration.js",
+            "additions": 16,
+            "deletions": 53
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "mgarbs"
+    }
+  },
+  {
     "title": "Update hip-551.md",
     "number": 1090,
     "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1090",
@@ -37,26 +78,6 @@
     },
     "author": {
       "login": "Mark-Swirlds"
-    }
-  },
-  {
-    "title": "Update hip-719.md to Final",
-    "number": 1088,
-    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1088",
-    "headRefOid": "647a611ff8c4ce073bf8b0e3d9080ef387dac42a",
-    "files": {
-      "edges": [
-        {
-          "node": {
-            "path": "HIP/hip-719.md",
-            "additions": 3,
-            "deletions": 2
-          }
-        }
-      ]
-    },
-    "author": {
-      "login": "mgarbs"
     }
   },
   {
