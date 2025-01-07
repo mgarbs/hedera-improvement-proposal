@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: read  # Add explicit PR read permission
     steps:
       - uses: actions/checkout@v3
         with:
@@ -20,131 +21,110 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Create Test Script
+      - name: Create Script
         run: |
           mkdir -p _data
           cat << 'EOF' > fetch-draft-hips.js
           const https = require('https');
 
-          // Define comprehensive query to get all necessary data
-          const query = `
-            query { 
-              repository(name: "hedera-improvement-proposal", owner: "hashgraph") {
-                pullRequests(first: 100, orderBy: {field: CREATED_AT, direction: DESC}, states: [OPEN]) {
-                  totalCount
-                  pageInfo {
-                    hasNextPage
-                    endCursor
-                  }
-                  nodes {
-                    title
-                    number
-                    url
-                    headRefOid
-                    files(first: 100) {
-                      totalCount
-                      pageInfo {
-                        hasNextPage
-                        endCursor
-                      }
-                      edges {
-                        node {
-                          path
-                          additions
-                          deletions
+          async function makeGraphQLRequest(query, token) {
+            return new Promise((resolve, reject) => {
+              const options = {
+                hostname: 'api.github.com',
+                path: '/graphql',
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                  'User-Agent': 'Node.js'
+                }
+              };
+
+              const req = https.request(options, (res) => {
+                let data = '';
+                res.on('data', chunk => { data += chunk; });
+                res.on('end', () => resolve(JSON.parse(data)));
+              });
+
+              req.on('error', reject);
+              req.write(JSON.stringify({ query }));
+              req.end();
+            });
+          }
+
+          async function getAllPRs() {
+            const query = `
+              query { 
+                repository(name: "hedera-improvement-proposal", owner: "hashgraph") {
+                  pullRequests(first: 100, states: [OPEN], orderBy: {field: CREATED_AT, direction: DESC}) {
+                    nodes {
+                      title
+                      number
+                      url
+                      headRefOid
+                      files(first: 100) {
+                        edges {
+                          node {
+                            path
+                            additions
+                            deletions
+                          }
                         }
                       }
-                    }
-                    author {
-                      login
-                    }
-                    labels(first: 10) {
-                      nodes {
-                        name
+                      author {
+                        login
                       }
                     }
-                    createdAt
-                    updatedAt
+                    totalCount
+                    pageInfo {
+                      hasNextPage
+                      endCursor
+                    }
                   }
                 }
               }
-            }
-          `;
+            `;
 
-          const options = {
-            hostname: 'api.github.com',
-            path: '/graphql',
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
-              'Content-Type': 'application/json',
-              'User-Agent': 'Node.js'
-            }
-          };
-
-          const req = https.request(options, (res) => {
-            let data = '';
-            
-            res.on('data', (chunk) => {
-              data += chunk;
-            });
-            
-            res.on('end', async () => {
-              const result = JSON.parse(data);
+            try {
+              const result = await makeGraphQLRequest(query, process.env.GITHUB_TOKEN);
+              
               if (result.errors) {
                 console.error('GraphQL errors:', result.errors);
                 process.exit(1);
               }
 
-              const prs = result.data.repository.pullRequests;
+              const prData = result.data.repository.pullRequests;
               
-              // Detailed logging
-              console.log('\n=== Query Results Analysis ===');
-              console.log('Total PRs available:', prs.totalCount);
-              console.log('PRs fetched:', prs.nodes.length);
-              console.log('Has more PRs:', prs.pageInfo.hasNextPage);
-              console.log('\nPR Details:');
-              prs.nodes.forEach(pr => {
+              console.log('=== Query Results ===');
+              console.log('Total PRs available:', prData.totalCount);
+              console.log('PRs fetched:', prData.nodes.length);
+              console.log('Has more pages:', prData.pageInfo.hasNextPage);
+              
+              console.log('\nFirst few PRs:');
+              prData.nodes.slice(0, 3).forEach(pr => {
                 console.log(`\nPR #${pr.number}:`);
-                console.log('- Title:', pr.title);
-                console.log('- Files count:', pr.files.edges.length);
-                console.log('- MD files:', pr.files.edges.filter(e => e.node.path.endsWith('.md')).length);
-                console.log('- Has more files:', pr.files.pageInfo.hasNextPage);
-                console.log('- Created:', pr.createdAt);
-                console.log('- Updated:', pr.updatedAt);
+                console.log('Title:', pr.title);
+                console.log('Files:', pr.files.edges.length);
+                console.log('MD Files:', pr.files.edges.filter(e => e.node.path.endsWith('.md')).length);
               });
 
-              // Write detailed data to file
-              const fs = require('fs');
-              fs.writeFileSync('_data/draft_hips.json', JSON.stringify(result.data.repository.pullRequests.nodes, null, 2));
-              
-              // Write analysis to separate file
-              const analysis = {
-                timestamp: new Date().toISOString(),
-                totalPRs: prs.totalCount,
-                fetchedPRs: prs.nodes.length,
-                hasMorePRs: prs.pageInfo.hasNextPage,
-                prDetails: prs.nodes.map(pr => ({
-                  number: pr.number,
-                  title: pr.title,
-                  fileCount: pr.files.edges.length,
-                  mdFileCount: pr.files.edges.filter(e => e.node.path.endsWith('.md')).length,
-                  hasMoreFiles: pr.files.pageInfo.hasNextPage,
-                  created: pr.createdAt,
-                  updated: pr.updatedAt
-                }))
-              };
-              fs.writeFileSync('_data/analysis.json', JSON.stringify(analysis, null, 2));
-            });
-          });
+              return prData.nodes;
+            } catch (error) {
+              console.error('Error fetching PRs:', error);
+              throw error;
+            }
+          }
 
-          req.on('error', (error) => {
-            console.error('Error:', error);
+          // Run the main function
+          getAllPRs().then(prs => {
+            const fs = require('fs');
+            fs.writeFileSync('_data/draft_hips.json', JSON.stringify(prs, null, 2));
+            console.log('\nData written to _data/draft_hips.json');
+            console.log('Total PRs written:', prs.length);
+          }).catch(error => {
+            console.error('Failed to fetch PRs:', error);
             process.exit(1);
           });
-
-          req.write(JSON.stringify({ query }));
-          req.end();
           EOF
 
       - name: Run Script
@@ -152,10 +132,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check Results
+        run: |
+          echo "Checking results file..."
+          if [ -f "_data/draft_hips.json" ]; then
+            echo "File exists"
+            SIZE=$(stat -f%z "_data/draft_hips.json")
+            echo "File size: $SIZE bytes"
+            echo "First few lines:"
+            head -n 20 "_data/draft_hips.json"
+          else
+            echo "File does not exist!"
+            exit 1
+          fi
+
       - name: Commit and Push Changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add _data/draft_hips.json _data/analysis.json
-          git commit -m "Update draft HIPs data with analysis [skip ci]"
+          git add _data/draft_hips.json
+          git commit -m "Update draft HIPs data [skip ci]"
           git push origin main
