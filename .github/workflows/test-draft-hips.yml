@@ -1,22 +1,20 @@
-name: Test Draft HIPs Data Collection
+name: Update Draft HIPs Data
 
 on:
-  workflow_dispatch:  # This allows manual triggering
-  pull_request:      # This runs on PRs
-    branches:
-      - main
+  schedule:
+    - cron: '0 */6 * * *'  # Runs every 6 hours
+  workflow_dispatch:        # Allows manual triggering
 
 jobs:
-  test-draft-hips:
+  update-draft-hips:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}  # Checkout the PR branch or current branch
-          fetch-depth: 0  # Fetch all history
-
+          ref: main
+          
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -31,13 +29,13 @@ jobs:
           const query = `
             query { 
               repository(name: "hedera-improvement-proposal", owner: "hashgraph") {
-                pullRequests(first: 10, orderBy: {field: CREATED_AT, direction: DESC}, states: [OPEN]) {
+                pullRequests(first: 100, orderBy: {field: CREATED_AT, direction: DESC}, states: [OPEN]) {
                   nodes {
                     title
                     number
                     url
                     headRefOid
-                    files(last: 10) {
+                    files(last: 100) {
                       edges {
                         node {
                           path
@@ -80,13 +78,14 @@ jobs:
                 process.exit(1);
               }
               
-              // Log the results for testing
+              // Log stats for verification
               console.log('API Response Status:', res.statusCode);
               console.log('Number of PRs fetched:', result.data.repository.pullRequests.nodes.length);
-              console.log('\nFirst PR data sample:');
-              console.log(JSON.stringify(result.data.repository.pullRequests.nodes[0], null, 2));
+              console.log('Sample of file counts:', result.data.repository.pullRequests.nodes.slice(0,3).map(pr => ({
+                pr: pr.number,
+                files: pr.files.edges.length
+              })));
               
-              // Write the data to file
               const fs = require('fs');
               fs.writeFileSync('_data/draft_hips.json', JSON.stringify(result.data.repository.pullRequests.nodes, null, 2));
             });
@@ -101,26 +100,15 @@ jobs:
           req.end();
           EOF
 
-      - name: Run Test Script
+      - name: Run Script
         run: node fetch-draft-hips.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check Output File
-        run: |
-          if [ -f "_data/draft_hips.json" ]; then
-            echo "✅ draft_hips.json was created successfully"
-            echo "File contents preview:"
-            head -n 20 _data/draft_hips.json
-          else
-            echo "❌ Error: draft_hips.json was not created"
-            exit 1
-          fi
 
       - name: Commit and Push Changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add _data/draft_hips.json
-          git commit -m "Update draft HIPs data from workflow"
-          git push origin HEAD:${{ github.head_ref }}
+          git commit -m "Update draft HIPs data [skip ci]"
+          git push origin main
