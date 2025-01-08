@@ -1,5 +1,25 @@
 [
   {
+    "title": "Pr/1021Update HIP-1021 #1",
+    "number": 1094,
+    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1094",
+    "headRefOid": "121a976d1a8723147656e7307cef4f8c4d7cec5e",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-1021.md",
+            "additions": 12,
+            "deletions": 15
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "ty-swirldslabs"
+    }
+  },
+  {
     "title": "Display draft HIPs for Jekyll build",
     "number": 1093,
     "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1093",
