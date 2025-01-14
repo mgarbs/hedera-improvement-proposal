@@ -3,13 +3,13 @@
     "title": "chore: add post implementation updates for accuracy",
     "number": 1098,
     "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1098",
-    "headRefOid": "7fb3f9933dafc1e9752902a3f5bc91644b2dad6c",
+    "headRefOid": "51906a5b1787253c20c0cfbc604475c40a30910a",
     "files": {
       "edges": [
         {
           "node": {
             "path": "HIP/hip-755.md",
-            "additions": 16,
+            "additions": 17,
             "deletions": 12
           }
         }
@@ -37,47 +37,6 @@
     },
     "author": {
       "login": "netopyr"
-    }
-  },
-  {
-    "title": "Display draft HIPs for Jekyll build",
-    "number": 1093,
-    "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1093",
-    "headRefOid": "d768cc831398d5b77025bcba51e45e3b7dcd11c3",
-    "files": {
-      "edges": [
-        {
-          "node": {
-            "path": ".github/workflows/update-draft-hips.yml",
-            "additions": 118,
-            "deletions": 0
-          }
-        },
-        {
-          "node": {
-            "path": "_config.yml",
-            "additions": 3,
-            "deletions": 0
-          }
-        },
-        {
-          "node": {
-            "path": "_includes/head.html",
-            "additions": 0,
-            "deletions": 1
-          }
-        },
-        {
-          "node": {
-            "path": "assets/js/pr-integration.js",
-            "additions": 16,
-            "deletions": 53
-          }
-        }
-      ]
-    },
-    "author": {
-      "login": "mgarbs"
     }
   },
   {
