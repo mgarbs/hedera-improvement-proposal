@@ -23,13 +23,13 @@
     "title": "HIP-991: Introduce generic custom fee limits",
     "number": 1095,
     "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1095",
-    "headRefOid": "9984ad27cc115e8dab1ac163beb004397075645b",
+    "headRefOid": "fc8aea6f7744016978e93b56094a64434e985076",
     "files": {
       "edges": [
         {
           "node": {
             "path": "HIP/hip-991.md",
-            "additions": 37,
+            "additions": 38,
             "deletions": 22
           }
         }
