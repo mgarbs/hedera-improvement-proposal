@@ -170,13 +170,13 @@
     "title": "Enable KeyList Support in HTS  Precompile",
     "number": 1069,
     "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1069",
-    "headRefOid": "ca1f95b43f26269d2ea11b3d1009a56601b2d59c",
+    "headRefOid": "62e2fb0951689e0baf0d7023fcb691cf55fcbf61",
     "files": {
       "edges": [
         {
           "node": {
             "path": "HIP/hip-1069.md",
-            "additions": 91,
+            "additions": 130,
             "deletions": 0
           }
         }
@@ -190,13 +190,13 @@
     "title": "Sponsored Fees",
     "number": 1068,
     "url": "https://github.com/hashgraph/hedera-improvement-proposal/pull/1068",
-    "headRefOid": "335fc2b104a5d6348f1436d071d28148e2cba634",
+    "headRefOid": "265855a49972c93cbd0a5ddda58a58ec5cf1853d",
     "files": {
       "edges": [
         {
           "node": {
             "path": "HIP/hip-1068.md",
-            "additions": 542,
+            "additions": 540,
             "deletions": 0
           }
         },
