@@ -1,5 +1,65 @@
 [
   {
+    "title": "Update HIP-1064 with new changes",
+    "number": 1160,
+    "url": "https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1160",
+    "headRefOid": "844e86718dc4340432a6efffce5bfb8bcdb1e7eb",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-1064.md",
+            "additions": 118,
+            "deletions": 32
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "Neeharika-Sompalli"
+    }
+  },
+  {
+    "title": "Update HIP-991 status to Final",
+    "number": 1159,
+    "url": "https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1159",
+    "headRefOid": "abadcb04652e089cb5bc3fd9c56a50e3ee9a48f4",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "HIP/hip-991.md",
+            "additions": 3,
+            "deletions": 2
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "derektriley"
+    }
+  },
+  {
+    "title": "Create MAINTAINERS.md",
+    "number": 1158,
+    "url": "https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1158",
+    "headRefOid": "cb8c6475f76898007c8354dab47ccbaf9e74c1df",
+    "files": {
+      "edges": [
+        {
+          "node": {
+            "path": "MAINTAINERS.md",
+            "additions": 104,
+            "deletions": 0
+          }
+        }
+      ]
+    },
+    "author": {
+      "login": "hendrikebbers"
+    }
+  },
+  {
     "title": "NEW HIP: Improve Hedera Sharding",
     "number": 1151,
     "url": "https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1151",
