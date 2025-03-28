@@ -1,25 +1,5 @@
 [
   {
-    "title": "Update HIP-1064 with new changes",
-    "number": 1160,
-    "url": "https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1160",
-    "headRefOid": "844e86718dc4340432a6efffce5bfb8bcdb1e7eb",
-    "files": {
-      "edges": [
-        {
-          "node": {
-            "path": "HIP/hip-1064.md",
-            "additions": 118,
-            "deletions": 32
-          }
-        }
-      ]
-    },
-    "author": {
-      "login": "Neeharika-Sompalli"
-    }
-  },
-  {
     "title": "Update HIP-991 status to Final",
     "number": 1159,
     "url": "https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1159",
